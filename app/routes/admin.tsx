@@ -1,7 +1,9 @@
 import { Fragment } from 'react'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { Outlet } from '@remix-run/react'
+import { Link, Outlet } from '@remix-run/react'
+import { LoaderFunction } from '@remix-run/node'
+import { logout, requireUserId } from '~/servers/auth.server'
 
 const user = {
     name: 'Tom Cook',
@@ -21,7 +23,14 @@ const userNavigation = [
 function classNames(...classes: any[]) {
     return classes.filter(Boolean).join(' ')
 }
+export const loader: LoaderFunction = async ({ request }) => {
+    await requireUserId(request)
+    return null;
+}
 
+export async function deslog(){
+    return await logout()
+}
 export default function AdminLayout() {
     return (
         <>
@@ -92,15 +101,15 @@ export default function AdminLayout() {
                                                     {userNavigation.map((item) => (
                                                         <Menu.Item key={item.name}>
                                                             {({ active }: any) => (
-                                                                <a
-                                                                    href={item.href}
+                                                                <Link
+                                                                    to="sign-out"
                                                                     className={classNames(
                                                                         active ? 'bg-gray-100' : '',
                                                                         'block px-4 py-2 text-sm text-gray-700'
                                                                     )}
                                                                 >
                                                                     {item.name}
-                                                                </a>
+                                                                </Link>
                                                             )}
                                                         </Menu.Item>
                                                     ))}

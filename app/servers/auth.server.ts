@@ -1,5 +1,5 @@
 import { json,  redirect } from "@remix-run/node";
-import { authCookie } from "./cookie.server";
+import { authCookie, deleteCookie } from "./cookie.server";
 import { prisma } from "./prisma.server";
 import type { LoginForm, RegisterForm } from "./types.server";
 import { createUser } from "./users.server";
@@ -11,7 +11,7 @@ export const login = async (form: LoginForm): Promise<any> => {
     return json({ error: "Incorret login" }, { status: 400 });
   }
 
-  return createUserSession(user.id, "/");
+  return createUserSession(user.id, "/admin");
 };
 
 export const register = async (form: RegisterForm) => {
@@ -38,7 +38,7 @@ export const register = async (form: RegisterForm) => {
     );
   }
 
-  await createUserSession(newUser.id, "/");
+  await createUserSession(newUser.id, "/admin");
 };
 
 export const  createUserSession = async (userId: string, redirectTo: string) => {
@@ -49,27 +49,26 @@ export const  createUserSession = async (userId: string, redirectTo: string) => 
 
 export async function requireUserId(
   request: Request,
-  redirectTo: string = new URL(request.url).pathname
 ) {
   const session = await getUserSession(request);
-  const userId = session.get("userId");
-  if (!userId || typeof userId !== "string") {
-    const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
-    throw redirect(`/login?${searchParams}`);
+
+  if (!session) {
+    throw redirect("/");
   }
-  return userId;
+  return session;
 }
 
 async function getUserSession(request: Request) {
-  return await authCookie.parse(request.headers.get("Cookie"));
+  const cookieHeader = request.headers.get("Cookie");
+  const cookie =  await authCookie.parse(cookieHeader);
+
+ return cookie;
 }
 
-export async function logout(request: Request) {
-  const session = await getUserSession(request);
-
-  return redirect("/login", {
+export async function logout() {
+  return redirect("/", {
     headers: {
-      "Set-Cookie": await authCookie.parse(session),
+      "Set-Cookie": await deleteCookie.serialize({}),
     },
   });
 }
@@ -91,6 +90,6 @@ export async function getUser(request: Request) {
       select: { id: true, email: true },
     });
   } catch (err) {
-    throw logout(request);
+    throw logout();
   }
 }
