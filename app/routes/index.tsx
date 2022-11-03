@@ -16,11 +16,15 @@ const schema = z.object({
 
 export const action: ActionFunction = async ({ request }) => {
     const formValues = Object.fromEntries(await request.formData())
+    const result = schema.safeParse(formValues)
+    if (!result.success) {
+        return json<ActionData>({ errors: result.error.issues })
+    }
     return await login({ email: formValues.email.toString(), password: formValues.password.toString()})
 }
 
 function Error(props: JSX.IntrinsicElements['div']) {
-    return <div {...props} className="mt-1 text-red-500" />
+    return <div {...props} className="text-xs text-red-500 w-full tracking-wide" />
 }
 
 function ServerError({ name }: { name: string }) {
@@ -68,9 +72,9 @@ export default function Login() {
 
                         <Form 
                             method="post" 
-                            // onSubmit={(event: any) => {
-                            //     handleSubmit(() => submit(event.target))(event)
-                            // }}
+                            onSubmit={(event: any) => {
+                                handleSubmit(() => submit(event.target))
+                            }}
                             className="space-y-6">
                             <label className="block text-sm font-medium text-gray-700">E-mail</label>
                             <Input {...register("email")} type="email" />
